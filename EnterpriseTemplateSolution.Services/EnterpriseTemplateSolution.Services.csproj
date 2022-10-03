@@ -6,4 +6,8 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\EnterpriseTemplateSolution.Services.Interfaces\EnterpriseTemplateSolution.Services.Interfaces.csproj" />
+    </ItemGroup>
+
 </Project>

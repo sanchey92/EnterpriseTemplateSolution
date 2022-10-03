@@ -10,3 +10,5 @@ Technology:
 2. APT.NET CORE;
 3. PostgreSQL;
 4. Automapper;
+
+![](images/1.png)

@@ -6,4 +6,9 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\EnterpriseTemplateSolution.Interfaces\EnterpriseTemplateSolution.Interfaces.csproj" />
+      <ProjectReference Include="..\EnterpriseTemplateSolution.Shared\EnterpriseTemplateSolution.Shared.csproj" />
+    </ItemGroup>
+
 </Project>
