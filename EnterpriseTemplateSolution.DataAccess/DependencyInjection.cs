@@ -1,4 +1,7 @@
 using EnterpriseTemplateSolution.DataAccess.DbContexts;
+using EnterpriseTemplateSolution.DataAccess.Repositories;
+using EnterpriseTemplateSolution.Interfaces.Repositories;
+using EnterpriseTemplateSolution.Interfaces.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,6 +18,9 @@ public static class DependencyInjection
 
         services.AddDbContext<ApplicationDbContext>(opt => opt.UseNpgsql(defaultDbConnection));
         services.AddDbContext<ApplicationIdentityDbContext>(opt => opt.UseNpgsql(identityDbConnection));
+
+        services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
     }
 
     private static string GenerateConnectionString(IConfiguration configuration, string name)
