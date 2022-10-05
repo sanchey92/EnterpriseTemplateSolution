@@ -11,7 +11,7 @@ public class UnitOfWork : IUnitOfWork
     private readonly ApplicationDbContext _dbContext;
     private Hashtable _repositories;
 
-    public UnitOfWork(ApplicationDbContext dbContext, Hashtable repositories) => _dbContext = dbContext;
+    public UnitOfWork(ApplicationDbContext dbContext) => _dbContext = dbContext;
 
     public void Dispose() => _dbContext.Dispose();
 
