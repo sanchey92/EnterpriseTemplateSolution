@@ -1,5 +1,5 @@
 using EnterpriseTemplateSolution.Services.Interfaces;
-using EnterpriseTemplateSolution.Shared;
+using EnterpriseTemplateSolution.Shared.DTOs.AuthenticationService;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EnterpriseTemplateSolution.API.Controllers;
@@ -21,5 +21,14 @@ public class AuthenticationController : ControllerBase
             return BadRequest(ModelState);
 
         return StatusCode(201);
+    }
+
+    [HttpPost("login")]
+    public async Task<IActionResult> AuthenticateAsync([FromBody] AuthenticationUserDto authenticationUserDto)
+    {
+        if (!await _service.AuthenticationService.ValidateUserAsync(authenticationUserDto))
+            return Unauthorized();
+
+        return Ok(new { Token = await _service.AuthenticationService.CreateTokenAsync() });
     }
 }

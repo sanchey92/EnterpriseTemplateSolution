@@ -1,4 +1,4 @@
-namespace EnterpriseTemplateSolution.Shared;
+namespace EnterpriseTemplateSolution.Shared.DTOs.AuthenticationService;
 
 public record RegistrationUserDto
 {
@@ -9,5 +9,4 @@ public record RegistrationUserDto
     public string? Email { get; init; }
     public string? PhoneNumber { get; init; }
     public ICollection<string>? Roles { get; set; }
-    
 }
