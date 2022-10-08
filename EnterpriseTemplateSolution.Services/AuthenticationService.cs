@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using AutoMapper;
+using EnterpriseTemplateSolution.Entities.Exceptions;
 using EnterpriseTemplateSolution.Entities.Identity;
 using EnterpriseTemplateSolution.Services.Interfaces;
 using EnterpriseTemplateSolution.Shared.DTOs.AuthenticationService;
@@ -73,7 +74,7 @@ public class AuthenticationService : IAuthenticationService
         if (user is null || user.RefreshToken != tokenDto.RefreshToken ||
             user.RefreshTokenExpiryTime <= DateTime.UtcNow)
         {
-            throw new Exception("Refresh token bad request");
+            throw new RefreshTokenBadRequest();
         }
 
         _applicationUser = user;
@@ -152,8 +153,7 @@ public class AuthenticationService : IAuthenticationService
         if (jwtSecurityToken is null || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256,
                 StringComparison.InvariantCultureIgnoreCase))
         {
-            // TODO: implement exception middleware 
-            throw new Exception("Invalid Token");
+            throw new SecurityTokenException("Invalid Token");
         }
 
         return principal;
