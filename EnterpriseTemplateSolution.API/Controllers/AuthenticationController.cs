@@ -29,6 +29,15 @@ public class AuthenticationController : ControllerBase
         if (!await _service.AuthenticationService.ValidateUserAsync(authenticationUserDto))
             return Unauthorized();
 
-        return Ok(new { Token = await _service.AuthenticationService.CreateTokenAsync() });
+        var tokenDto = await _service.AuthenticationService.CreateTokenAsync(populateExp: true);
+
+        return Ok(tokenDto);
+    }
+
+    [HttpPost("refresh")]
+    public async Task<IActionResult> RefreshTokenAsync([FromBody] TokenDto tokenDto)
+    {
+        var tokenToReturnDto = await _service.AuthenticationService.RefreshTokenAsync(tokenDto);
+        return Ok(tokenToReturnDto);
     }
 }

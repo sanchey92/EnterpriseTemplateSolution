@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using AutoMapper;
 using EnterpriseTemplateSolution.Entities.Identity;
@@ -45,13 +46,38 @@ public class AuthenticationService : IAuthenticationService
         return result;
     }
 
-    public async Task<string> CreateTokenAsync()
+    public async Task<TokenDto> CreateTokenAsync(bool populateExp)
     {
         var signingCredentials = GetSigningCredentials();
         var claims = await GetClaims();
         var tokenOptions = GenerateTokenOptions(signingCredentials, claims);
+        var refreshToken = GenerateRefreshToken();
 
-        return new JwtSecurityTokenHandler().WriteToken(tokenOptions);
+        _applicationUser.RefreshToken = refreshToken;
+
+        if (populateExp)
+            _applicationUser.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+
+        await _userManager.UpdateAsync(_applicationUser);
+
+        var accessToken = new JwtSecurityTokenHandler().WriteToken(tokenOptions);
+
+        return new TokenDto(accessToken, refreshToken);
+    }
+
+    public async Task<TokenDto> RefreshTokenAsync(TokenDto tokenDto)
+    {
+        var principal = GetPrincipalFromFromExpiredToken(tokenDto.AccessToken);
+        var user = await _userManager.FindByNameAsync(principal.Identity?.Name);
+
+        if (user is null || user.RefreshToken != tokenDto.RefreshToken ||
+            user.RefreshTokenExpiryTime <= DateTime.UtcNow)
+        {
+            throw new Exception("Refresh token bad request");
+        }
+
+        _applicationUser = user;
+        return await CreateTokenAsync(populateExp: false);
     }
 
     private SigningCredentials GetSigningCredentials()
@@ -70,8 +96,8 @@ public class AuthenticationService : IAuthenticationService
 
         var claims = new List<Claim>
             {
-                new(JwtRegisteredClaimNames.Sub, _applicationUser.UserName),
-                new(JwtRegisteredClaimNames.Email, _applicationUser.Email),
+                new(ClaimTypes.Name, _applicationUser.UserName),
+                new(ClaimTypes.Email, _applicationUser.Email),
                 new("uid", _applicationUser.Id)
             }
             .Union(userClaims)
@@ -82,7 +108,7 @@ public class AuthenticationService : IAuthenticationService
 
     private JwtSecurityToken GenerateTokenOptions(SigningCredentials signingCredentials, IEnumerable<Claim> claims)
     {
-        var jwtSettings = _configuration.GetSection("JwtSection");
+        var jwtSettings = _configuration.GetSection("JwtSettings");
 
         var tokenOptions = new JwtSecurityToken
         (
@@ -94,5 +120,42 @@ public class AuthenticationService : IAuthenticationService
         );
 
         return tokenOptions;
+    }
+
+    private static string GenerateRefreshToken()
+    {
+        var randomNumber = new byte[32];
+        using var randomGenerator = RandomNumberGenerator.Create();
+        randomGenerator.GetBytes(randomNumber);
+        return Convert.ToBase64String(randomNumber);
+    }
+
+    private ClaimsPrincipal GetPrincipalFromFromExpiredToken(string token)
+    {
+        var jwtSettings = _configuration.GetSection("JwtSettings");
+
+        var tokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateAudience = true,
+            ValidateIssuer = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["SecretKey"])),
+            ValidateLifetime = true,
+            ValidIssuer = jwtSettings["validIssuer"],
+            ValidAudience = jwtSettings["validAudience"]
+        };
+
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out var securityToken);
+        var jwtSecurityToken = securityToken as JwtSecurityToken;
+
+        if (jwtSecurityToken is null || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256,
+                StringComparison.InvariantCultureIgnoreCase))
+        {
+            // TODO: implement exception middleware 
+            throw new Exception("Invalid Token");
+        }
+
+        return principal;
     }
 }

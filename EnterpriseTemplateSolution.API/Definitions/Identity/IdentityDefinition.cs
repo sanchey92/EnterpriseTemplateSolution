@@ -20,7 +20,5 @@ public class IdentityDefinition : ApplicationDefinition
             })
             .AddEntityFrameworkStores<ApplicationIdentityDbContext>()
             .AddDefaultTokenProviders();
-
-        services.AddAuthentication();
     }
 }
